@@ -1,0 +1,759 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VTE风险评估计算器</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
+        }
+        body {
+            background-color: #f8fafc;
+            color: #2d3748;
+            line-height: 1.6;
+            padding: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding-bottom: 20px;
+            border-bottom: 3px solid #2b6cb0;
+        }
+        h1 {
+            color: #2c5282;
+            font-size: 2.2rem;
+            margin-bottom: 10px;
+        }
+        .subtitle {
+            color: #4a5568;
+            font-size: 1.1rem;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        h2 {
+            color: #2c5282;
+            background-color: #e6f2ff;
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-top: 30px;
+            margin-bottom: 20px;
+            font-size: 1.4rem;
+            border-left: 4px solid #2b6cb0;
+        }
+        .calculator-layout {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+        @media (max-width: 1024px) {
+            .calculator-layout {
+                grid-template-columns: 1fr;
+            }
+        }
+        .risk-sections {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 25px;
+        }
+        .lab-section {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
+            border-top: 5px solid #4299e1;
+        }
+        .risk-section {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            border-top: 5px solid #ccc;
+        }
+        .score-1 { border-top-color: #38a169; }
+        .score-2 { border-top-color: #ed8936; }
+        .score-3 { border-top-color: #e53e3e; }
+        .score-5 { border-top-color: #9f7aea; }
+        .risk-item {
+            margin-bottom: 12px;
+            padding: 12px 15px;
+            background-color: #f7fafc;
+            border-left: 4px solid #cbd5e0;
+            border-radius: 6px;
+            transition: all 0.2s ease;
+            border: 1px solid #e2e8f0;
+        }
+        .risk-item:hover {
+            background-color: #edf2f7;
+            transform: translateY(-2px);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+        .risk-item label {
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            font-size: 0.95em;
+            width: 100%;
+            color: #2d3748;
+        }
+        .risk-item input[type="checkbox"] {
+            margin-right: 15px;
+            transform: scale(1.2);
+            cursor: pointer;
+        }
+        .lab-input-group {
+            display: flex;
+            flex-direction: column;
+            margin-top: 8px;
+            background-color: #f8fafc;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+        }
+        .lab-input-row {
+            display: flex;
+            align-items: center;
+            margin-bottom: 12px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        .lab-input-row:last-child {
+            margin-bottom: 0;
+            padding-bottom: 0;
+            border-bottom: none;
+        }
+        .lab-input-row label {
+            width: 180px;
+            font-size: 0.95em;
+            margin-right: 15px;
+            color: #4a5568;
+            font-weight: 500;
+        }
+        .lab-input-row input {
+            flex: 1;
+            padding: 8px 12px;
+            border: 2px solid #e2e8f0;
+            border-radius: 6px;
+            font-size: 0.95em;
+            transition: border-color 0.2s;
+        }
+        .lab-input-row input:focus {
+            outline: none;
+            border-color: #4299e1;
+            box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.2);
+        }
+        .lab-result-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-top: 10px;
+            padding: 10px 15px;
+            background-color: #f0fff4;
+            border-radius: 6px;
+            border: 1px solid #c6f6d5;
+        }
+        .lab-result-value {
+            font-weight: bold;
+            color: #2d3748;
+        }
+        .result-indicator {
+            font-size: 0.85em;
+            font-weight: bold;
+            padding: 4px 12px;
+            border-radius: 20px;
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            min-width: 80px;
+            text-align: center;
+        }
+        .result-indicator.positive {
+            background-color: #c6f6d5;
+            color: #22543d;
+            border-color: #9ae6b4;
+        }
+        .result-indicator.negative {
+            background-color: #fed7d7;
+            color: #742a2a;
+            border-color: #fc8181;
+        }
+        .result-indicator.neutral {
+            background-color: #e2e8f0;
+            color: #4a5568;
+            border-color: #cbd5e0;
+        }
+        .score-badge {
+            display: inline-block;
+            background-color: #2b6cb0;
+            color: white;
+            font-weight: bold;
+            font-size: 0.8em;
+            padding: 4px 10px;
+            border-radius: 12px;
+            margin-left: 10px;
+            min-width: 40px;
+            text-align: center;
+        }
+        .score-1 .score-badge { background-color: #38a169; }
+        .score-2 .score-badge { background-color: #ed8936; }
+        .score-3 .score-badge { background-color: #e53e3e; }
+        .score-5 .score-badge { background-color: #9f7aea; }
+        .lab-section .score-badge { background-color: #4299e1; }
+        .result-panel {
+            background: linear-gradient(135deg, #2b6cb0 0%, #2c5282 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 12px;
+            text-align: center;
+            box-shadow: 0 8px 20px rgba(43, 108, 176, 0.3);
+            margin-top: 30px;
+        }
+        .total-score {
+            font-size: 4.5rem;
+            font-weight: bold;
+            margin: 15px 0;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+        }
+        .risk-level {
+            font-size: 2rem;
+            font-weight: bold;
+            margin: 20px 0;
+            padding: 12px 30px;
+            border-radius: 50px;
+            display: inline-block;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .low-risk { 
+            background-color: #38a169;
+            background-image: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+        }
+        .high-risk { 
+            background-color: #e53e3e;
+            background-image: linear-gradient(135deg, #f56565 0%, #e53e3e 100%);
+        }
+        .instructions {
+            background-color: #fffaf0;
+            border-left: 5px solid #ed8936;
+            padding: 20px;
+            margin: 25px 0;
+            border-radius: 0 8px 8px 0;
+        }
+        .instructions h3 { 
+            margin-top: 0; 
+            color: #c05621; 
+            font-size: 1.3rem;
+        }
+        .instructions p {
+            margin-bottom: 10px;
+            color: #744210;
+        }
+        footer {
+            text-align: center;
+            margin-top: 40px;
+            color: #718096;
+            font-size: 0.9em;
+            padding-top: 20px;
+            border-top: 1px solid #e2e8f0;
+        }
+        .score-summary {
+            font-size: 1.3em;
+            margin-top: 15px;
+            opacity: 0.9;
+            background-color: rgba(255, 255, 255, 0.1);
+            padding: 10px 20px;
+            border-radius: 8px;
+            display: inline-block;
+        }
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .section-title {
+            font-size: 1.5rem;
+            color: #2c5282;
+            margin: 0;
+        }
+        .section-description {
+            color: #718096;
+            font-size: 0.95rem;
+            margin-top: 5px;
+        }
+        @media (max-width: 768px) {
+            .calculator-layout {
+                grid-template-columns: 1fr;
+            }
+            .risk-sections {
+                grid-template-columns: 1fr;
+            }
+            .lab-input-row {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            .lab-input-row label {
+                width: 100%;
+                margin-bottom: 8px;
+            }
+            .lab-input-row input {
+                width: 100%;
+            }
+            .result-indicator {
+                margin-top: 8px;
+                align-self: flex-start;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>VTE（静脉血栓栓塞症）风险评估计算器</h1>
+        <p class="subtitle">根据Caprini风险评估模型，勾选风险因素并输入实验室数据，自动计算VTE风险评分</p>
+    </header>
+
+    <div class="instructions">
+        <h3>使用说明</h3>
+        <p>1. 请在下方勾选患者符合的所有风险因素，系统将自动计算总分。</p>
+        <p>2. 在"实验室资料"区域输入相关检验数值，系统将自动判断是否为阳性指标。</p>
+        <p>3. 评分标准：低危 (0-12分)，高危 (≥13分)。</p>
+    </div>
+
+    <div class="calculator-layout">
+        <div class="risk-sections">
+            <section class="risk-section score-1">
+                <h2>1 分 / 项</h2>
+                <div id="score1Items">
+                    <!-- 项目由JavaScript动态生成 -->
+                </div>
+            </section>
+
+            <section class="risk-section score-2">
+                <h2>2 分 / 项</h2>
+                <div id="score2Items">
+                    <!-- 项目由JavaScript动态生成 -->
+                </div>
+            </section>
+
+            <section class="risk-section score-3">
+                <h2>3 分 / 项</h2>
+                <div id="score3Items">
+                    <!-- 项目由JavaScript动态生成 -->
+                </div>
+            </section>
+
+            <section class="risk-section score-5">
+                <h2>5 分 / 项</h2>
+                <div id="score5Items">
+                    <!-- 项目由JavaScript动态生成 -->
+                </div>
+            </section>
+        </div>
+
+        <section class="lab-section">
+            <div class="section-header">
+                <h2 class="section-title">实验室资料</h2>
+                <span class="score-badge">计算</span>
+            </div>
+            <p class="section-description">输入实验室检验数值，系统将自动计算并判断是否为风险因素</p>
+            
+            <div class="lab-input-group">
+                <div class="lab-input-row">
+                    <label for="fdp_value">FDP值 (mg/L):</label>
+                    <input type="number" id="fdp_value" step="0.01" min="0" placeholder="输入FDP数值" oninput="checkFDP()">
+                    <span id="fdp_indicator" class="result-indicator neutral">未输入</span>
+                </div>
+                <div class="lab-result-row">
+                    <span>判断标准: FDP > 3.68 mg/L</span>
+                    <span class="lab-result-value">3分/阳性</span>
+                </div>
+            </div>
+
+            <div class="lab-input-group" style="margin-top: 20px;">
+                <div class="lab-input-row">
+                    <label for="ddimer_value">D-二聚体值 (mg/LFEU):</label>
+                    <input type="number" id="ddimer_value" step="0.01" min="0" placeholder="输入D-二聚体数值" oninput="checkDDimer()">
+                    <span id="ddimer_indicator" class="result-indicator neutral">未输入</span>
+                </div>
+                <div class="lab-result-row">
+                    <span>判断标准: D-二聚体 > 3.54 mg/LFEU</span>
+                    <span class="lab-result-value">3分/阳性</span>
+                </div>
+            </div>
+
+            <div class="lab-input-group" style="margin-top: 20px;">
+                <div class="lab-input-row">
+                    <label for="platelet">血小板计数 (10^9/L):</label>
+                    <input type="number" id="platelet" step="1" min="0" placeholder="输入血小板计数" oninput="calculateSII()">
+                </div>
+                <div class="lab-input-row">
+                    <label for="neutrophil">中性粒细胞计数 (10^9/L):</label>
+                    <input type="number" id="neutrophil" step="0.01" min="0" placeholder="输入中性粒细胞计数" oninput="calculateSII()">
+                </div>
+                <div class="lab-input-row">
+                    <label for="lymphocyte">淋巴细胞计数 (10^9/L):</label>
+                    <input type="number" id="lymphocyte" step="0.01" min="0" placeholder="输入淋巴细胞计数" oninput="calculateSII()">
+                </div>
+                <div class="lab-result-row">
+                    <span>SII计算结果:</span>
+                    <span id="sii_value" style="font-weight: bold; font-size: 1.1em;">--</span>
+                    <span id="sii_indicator" class="result-indicator neutral">未计算</span>
+                </div>
+                <div class="lab-result-row">
+                    <span>判断标准: SII > 1921.26</span>
+                    <span class="lab-result-value">2分/阳性</span>
+                </div>
+            </div>
+
+            <div style="margin-top: 25px; padding: 15px; background-color: #f0f9ff; border-radius: 8px; border-left: 4px solid #4299e1;">
+                <p style="margin: 0; color: #2c5282; font-size: 0.9em;">
+                    <strong>说明：</strong>系统输入实验室数据后，会自动勾选相应的风险因素并计入总分。
+                </p>
+            </div>
+        </section>
+    </div>
+
+    <div class="result-panel">
+        <h2 style="margin-top: 0;">VTE风险评估结果</h2>
+        <div class="total-score" id="totalScore">0</div>
+        <p>当前总评分</p>
+        <div class="risk-level" id="riskLevelText">低危</div>
+        <p id="riskDescription" style="font-size: 1.1em; max-width: 700px; margin: 15px auto;">风险较低，建议尽早活动，必要时使用梯度压力袜等基本预防措施。</p>
+        <div class="score-summary">
+            已选择 <span id="selectedCount" style="font-weight: bold; font-size: 1.2em;">0</span> 个风险因素
+        </div>
+        <button onclick="resetCalculator()" style="margin-top: 20px; padding: 10px 25px; background-color: rgba(255, 255, 255, 0.2); color: white; border: 1px solid rgba(255, 255, 255, 0.3); border-radius: 6px; cursor: pointer; font-size: 1em; transition: background-color 0.2s;" onmouseover="this.style.backgroundColor='rgba(255,255,255,0.3)'" onmouseout="this.style.backgroundColor='rgba(255,255,255,0.2)'">重置计算器</button>
+    </div>
+
+    <footer>
+        <p>注：本工具根据Caprini风险评估模型常见项目制定，仅供临床参考。具体诊疗请结合患者全面情况并由专业医生判断。</p>
+        <p style="margin-top: 10px; font-size: 0.85em;">© VTE风险评估工具 v2.0</p>
+    </footer>
+
+    <script>
+        // 风险因素数据
+        const riskFactors = {
+            1: [
+                "肥胖(BMI≥25)",
+                "异常妊娠",
+                "妊娠期或产后(1个月内)",
+                "口服避孕药或激素替代治疗",
+                "卧床的内科患者",
+                "炎症性肠病史",
+                "下肢水肿",
+                "静脉曲张",
+                "严重的肺部疾病,含肺炎(一个月内)",
+                "肺功能异常，COPD",
+                "急性心肌埂塞",
+                "充血性心力衰竭(1个月内)",
+                "败血症(1个月内)",
+                "大手术(1个月内)",
+                "其他高危因素",
+                "高脂血症"
+            ],
+            2: [
+                "石膏固定（1个月内）",
+                "患者需要卧床大于72小时",
+                "恶性肿瘤（既往或现患）",
+                "中心静脉置管",
+                "腹腔镜手术（>45分钟）",
+                "大手术（>45分钟）",
+                "关节镜手术"
+            ],
+            3: [
+                "深静脉血栓/肺栓塞病史",
+                "肝素引起的血小板减少（HIT）",
+                "未列出的先天或后天血栓形成",
+                "抗心磷脂抗体阳性",
+                "凝血酶原20210A阳性",
+                "因子V Leiden阳性",
+                "狼疮抗凝物阳性",
+                "血清同型半胱氨酸酶升高",
+                "长期卧床（大于72h）",
+                "年龄≥60岁"
+            ],
+            5: [
+                "脑卒中（1个月内）",
+                "急性脊髓损伤（瘫痪）（1个月内）",
+                "选择性下肢关节置换术",
+                "髋关节，骨盆或下肢骨折",
+                "多发性创伤（1个月内）"
+            ]
+        };
+
+        // 风险等级描述（更新为0-12分为低危，≥13分为高危）
+        const riskLevels = {
+            low: {
+                name: "低危",
+                scoreRange: "0-12分",
+                description: "风险较低，建议尽早活动，必要时使用梯度压力袜等基本预防措施。",
+                colorClass: "low-risk"
+            },
+            high: {
+                name: "高危",
+                scoreRange: "≥13分",
+                description: "高风险，强烈建议药物预防（如低分子肝素）联合机械预防，并延长预防时间。",
+                colorClass: "high-risk"
+            }
+        };
+
+        // 初始化页面，生成风险项目列表
+        function initRiskItems() {
+            // 生成1分项目
+            const score1Container = document.getElementById('score1Items');
+            riskFactors[1].forEach(item => {
+                const itemDiv = document.createElement('div');
+                itemDiv.className = 'risk-item';
+                const itemId = `risk_1_${item.replace(/\s+/g, '_').replace(/[^\w]/g, '')}`;
+
+                itemDiv.innerHTML = `
+                    <label for="${itemId}">
+                        <input type="checkbox" id="${itemId}" value="1" data-name="${item}" onchange="updateScore()">
+                        ${item}
+                        <span class="score-badge">1分</span>
+                    </label>
+                `;
+                score1Container.appendChild(itemDiv);
+            });
+
+            // 生成2分项目
+            const score2Container = document.getElementById('score2Items');
+            riskFactors[2].forEach(item => {
+                const itemDiv = document.createElement('div');
+                itemDiv.className = 'risk-item';
+                const itemId = `risk_2_${item.replace(/\s+/g, '_').replace(/[^\w]/g, '')}`;
+
+                itemDiv.innerHTML = `
+                    <label for="${itemId}">
+                        <input type="checkbox" id="${itemId}" value="2" data-name="${item}" onchange="updateScore()">
+                        ${item}
+                        <span class="score-badge">2分</span>
+                    </label>
+                `;
+                score2Container.appendChild(itemDiv);
+            });
+
+            // 生成3分项目（不包括实验室项目）
+            const score3Container = document.getElementById('score3Items');
+            riskFactors[3].forEach(item => {
+                const itemDiv = document.createElement('div');
+                itemDiv.className = 'risk-item';
+                const itemId = `risk_3_${item.replace(/\s+/g, '_').replace(/[^\w]/g, '')}`;
+
+                itemDiv.innerHTML = `
+                    <label for="${itemId}">
+                        <input type="checkbox" id="${itemId}" value="3" data-name="${item}" onchange="updateScore()">
+                        ${item}
+                        <span class="score-badge">3分</span>
+                    </label>
+                `;
+                score3Container.appendChild(itemDiv);
+            });
+
+            // 生成5分项目
+            const score5Container = document.getElementById('score5Items');
+            riskFactors[5].forEach(item => {
+                const itemDiv = document.createElement('div');
+                itemDiv.className = 'risk-item';
+                const itemId = `risk_5_${item.replace(/\s+/g, '_').replace(/[^\w]/g, '')}`;
+
+                itemDiv.innerHTML = `
+                    <label for="${itemId}">
+                        <input type="checkbox" id="${itemId}" value="5" data-name="${item}" onchange="updateScore()">
+                        ${item}
+                        <span class="score-badge">5分</span>
+                    </label>
+                `;
+                score5Container.appendChild(itemDiv);
+            });
+        }
+
+        // 实验室数据相关函数
+        function checkFDP() {
+            const fdpValue = parseFloat(document.getElementById('fdp_value').value);
+            const fdpCheckbox = document.getElementById('risk_3_fdp');
+            const indicator = document.getElementById('fdp_indicator');
+            
+            if (!isNaN(fdpValue)) {
+                if (fdpValue > 3.68) {
+                    fdpCheckbox.checked = true;
+                    indicator.textContent = "阳性 (>3.68)";
+                    indicator.className = "result-indicator positive";
+                } else {
+                    fdpCheckbox.checked = false;
+                    indicator.textContent = "阴性 (≤3.68)";
+                    indicator.className = "result-indicator negative";
+                }
+            } else {
+                fdpCheckbox.checked = false;
+                indicator.textContent = "未输入";
+                indicator.className = "result-indicator neutral";
+            }
+            
+            updateScore();
+        }
+
+        function checkDDimer() {
+            const ddimerValue = parseFloat(document.getElementById('ddimer_value').value);
+            const ddimerCheckbox = document.getElementById('risk_3_ddimer');
+            const indicator = document.getElementById('ddimer_indicator');
+            
+            if (!isNaN(ddimerValue)) {
+                if (ddimerValue > 3.54) {
+                    ddimerCheckbox.checked = true;
+                    indicator.textContent = "阳性 (>3.54)";
+                    indicator.className = "result-indicator positive";
+                } else {
+                    ddimerCheckbox.checked = false;
+                    indicator.textContent = "阴性 (≤3.54)";
+                    indicator.className = "result-indicator negative";
+                }
+            } else {
+                ddimerCheckbox.checked = false;
+                indicator.textContent = "未输入";
+                indicator.className = "result-indicator neutral";
+            }
+            
+            updateScore();
+        }
+
+        function calculateSII() {
+            const platelet = parseFloat(document.getElementById('platelet').value);
+            const neutrophil = parseFloat(document.getElementById('neutrophil').value);
+            const lymphocyte = parseFloat(document.getElementById('lymphocyte').value);
+            const siiCheckbox = document.getElementById('risk_2_sii');
+            const siiValueSpan = document.getElementById('sii_value');
+            const indicator = document.getElementById('sii_indicator');
+            
+            if (!isNaN(platelet) && !isNaN(neutrophil) && !isNaN(lymphocyte) && lymphocyte > 0) {
+                const siiValue = platelet * neutrophil / lymphocyte;
+                siiValueSpan.textContent = siiValue.toFixed(2);
+                
+                if (siiValue > 1921.26) {
+                    siiCheckbox.checked = true;
+                    indicator.textContent = "阳性 (>1921.26)";
+                    indicator.className = "result-indicator positive";
+                } else {
+                    siiCheckbox.checked = false;
+                    indicator.textContent = "阴性 (≤1921.26)";
+                    indicator.className = "result-indicator negative";
+                }
+            } else {
+                siiValueSpan.textContent = "--";
+                siiCheckbox.checked = false;
+                indicator.textContent = "未计算";
+                indicator.className = "result-indicator neutral";
+            }
+            
+            updateScore();
+        }
+
+        // 计算总分和更新显示（更新为0-12分为低危，≥13分为高危）
+        function updateScore() {
+            let total = 0;
+            let selectedCount = 0;
+            
+            // 计算普通复选框的分数
+            const checkboxes = document.querySelectorAll('input[type="checkbox"]:checked');
+            checkboxes.forEach(cb => {
+                total += parseInt(cb.value);
+                selectedCount++;
+            });
+            
+            // 更新显示
+            document.getElementById('totalScore').textContent = total;
+            document.getElementById('selectedCount').textContent = selectedCount;
+
+            // 确定风险等级（更新为0-12分为低危，≥13分为高危）
+            let level;
+            if (total <= 12) {
+                level = riskLevels.low;
+            } else {
+                level = riskLevels.high;
+            }
+
+            const riskLevelElement = document.getElementById('riskLevelText');
+            riskLevelElement.textContent = level.name;
+            riskLevelElement.className = `risk-level ${level.colorClass}`;
+
+            document.getElementById('riskDescription').textContent = level.description;
+        }
+
+        // 重置计算器
+        function resetCalculator() {
+            // 重置所有复选框
+            document.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
+            
+            // 重置实验室输入框
+            document.querySelectorAll('input[type="number"]').forEach(input => input.value = '');
+            
+            // 重置指示器
+            document.getElementById('fdp_indicator').textContent = '未输入';
+            document.getElementById('fdp_indicator').className = 'result-indicator neutral';
+            document.getElementById('ddimer_indicator').textContent = '未输入';
+            document.getElementById('ddimer_indicator').className = 'result-indicator neutral';
+            document.getElementById('sii_indicator').textContent = '未计算';
+            document.getElementById('sii_indicator').className = 'result-indicator neutral';
+            document.getElementById('sii_value').textContent = '--';
+            
+            updateScore();
+            
+            // 显示重置成功的提示
+            alert('计算器已重置，所有数据已清除。');
+        }
+
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            initRiskItems();
+            
+            // 为实验室项目创建隐藏的复选框（用于计分）
+            createLabCheckboxes();
+            
+            // 测试示例数据
+            document.getElementById('risk_1_肥胖(BMI≥25)')?.setAttribute('checked', true);
+            document.getElementById('risk_2_石膏固定（1个月内）')?.setAttribute('checked', true);
+            document.getElementById('risk_3_深静脉血栓/肺栓塞病史')?.setAttribute('checked', true);
+            
+            // 为实验室数据设置示例值
+            document.getElementById('fdp_value').value = 4.2;
+            document.getElementById('ddimer_value').value = 2.8;
+            document.getElementById('platelet').value = 250;
+            document.getElementById('neutrophil').value = 7.5;
+            document.getElementById('lymphocyte').value = 1.2;
+            
+            // 检查实验室项目
+            checkFDP();
+            checkDDimer();
+            calculateSII();
+            
+            updateScore(); // 初始化计算
+        });
+
+        // 创建实验室项目的隐藏复选框
+        function createLabCheckboxes() {
+            const labCheckboxes = [
+                { id: 'risk_3_fdp', name: 'FDP>3.68mg/L', value: 3 },
+                { id: 'risk_3_ddimer', name: 'D-二聚体>3.54 mg/LFEU', value: 3 },
+                { id: 'risk_2_sii', name: 'SII＞1921.26', value: 2 }
+            ];
+            
+            // 创建隐藏的div存放实验室复选框
+            const hiddenDiv = document.createElement('div');
+            hiddenDiv.style.display = 'none';
+            document.body.appendChild(hiddenDiv);
+            
+            labCheckboxes.forEach(item => {
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.id = item.id;
+                checkbox.value = item.value;
+                checkbox.setAttribute('data-name', item.name);
+                checkbox.onchange = updateScore;
+                hiddenDiv.appendChild(checkbox);
+            });
+        }
+    </script>
+</body>
+</html>
