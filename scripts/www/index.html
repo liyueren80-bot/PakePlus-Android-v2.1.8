@@ -1,11 +1,1196 @@
 <!DOCTYPE html>
-<html lang="en">
-    <head>
-        <meta charset="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>PakePlus</title>
-    </head>
-    <body>
-        PakePlus
-    </body>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VTE风险评估助手（基于Caprini模型）</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
+        }
+        
+        body {
+            background-color: #f0f4f8;
+            color: #333;
+            line-height: 1.5;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        header {
+            background: linear-gradient(135deg, #1a6dbb, #0d4d8c);
+            color: white;
+            padding: 15px 25px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            flex-shrink: 0;
+        }
+        
+        .header-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        h1 {
+            font-size: 22px;
+            margin-bottom: 5px;
+        }
+        
+        .subtitle {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+        
+        .current-score {
+            background-color: rgba(255, 255, 255, 0.2);
+            padding: 10px 20px;
+            border-radius: 8px;
+            text-align: center;
+            min-width: 200px;
+        }
+        
+        .score-number {
+            font-size: 36px;
+            font-weight: bold;
+            line-height: 1;
+        }
+        
+        .score-label {
+            font-size: 14px;
+            margin-top: 5px;
+        }
+        
+        .main-container {
+            display: flex;
+            flex: 1;
+            max-height: calc(100vh - 120px);
+            overflow: hidden;
+            max-width: 1600px;
+            margin: 0 auto;
+            width: 100%;
+            padding: 15px;
+        }
+        
+        .left-panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            margin-right: 15px;
+            min-width: 800px;
+        }
+        
+        .right-panel {
+            width: 380px;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .card {
+            background-color: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            border-left: 4px solid #1a6dbb;
+            margin-bottom: 15px;
+            overflow-y: auto;
+            max-height: 100%;
+        }
+        
+        .patient-card {
+            height: 120px;
+        }
+        
+        .risk-factors-card {
+            flex: 1;
+            min-height: 400px;
+        }
+        
+        .lab-card {
+            height: 320px;
+        }
+        
+        .card-title {
+            font-size: 18px;
+            color: #1a6dbb;
+            margin-bottom: 15px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            align-items: center;
+        }
+        
+        .card-title i {
+            margin-right: 10px;
+        }
+        
+        .patient-info {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+        }
+        
+        .form-group {
+            margin-bottom: 0;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #555;
+            font-size: 14px;
+        }
+        
+        input[type="text"], input[type="number"], select {
+            width: 100%;
+            padding: 8px 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        
+        .risk-categories {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            height: calc(100% - 40px);
+        }
+        
+        .risk-column {
+            display: flex;
+            flex-direction: column;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            overflow: hidden;
+        }
+        
+        .column-header {
+            background-color: #f8f9fa;
+            padding: 10px;
+            font-weight: bold;
+            text-align: center;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        
+        .column-content {
+            padding: 10px;
+            overflow-y: auto;
+            flex: 1;
+        }
+        
+        .checkbox-item {
+            margin-bottom: 8px;
+            display: flex;
+            align-items: flex-start;
+        }
+        
+        .checkbox-item input {
+            margin-right: 8px;
+            margin-top: 2px;
+        }
+        
+        .checkbox-item label {
+            font-weight: normal;
+            font-size: 13px;
+            line-height: 1.3;
+            cursor: pointer;
+        }
+        
+        .lab-inputs {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 15px;
+        }
+        
+        .lab-item {
+            background-color: #f8fafc;
+            padding: 15px;
+            border-radius: 6px;
+            border-left: 3px solid #1a6dbb;
+        }
+        
+        .lab-item-title {
+            font-weight: bold;
+            margin-bottom: 8px;
+            color: #1a6dbb;
+            font-size: 14px;
+        }
+        
+        .lab-input-row {
+            display: flex;
+            align-items: flex-end;
+            gap: 10px;
+        }
+        
+        .lab-input-row input {
+            flex: 1;
+        }
+        
+        .btn {
+            background-color: #1a6dbb;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: background-color 0.2s;
+            white-space: nowrap;
+        }
+        
+        .btn:hover {
+            background-color: #0d4d8c;
+        }
+        
+        .btn-small {
+            padding: 6px 12px;
+            font-size: 12px;
+        }
+        
+        .risk-level-display {
+            text-align: center;
+            padding: 20px;
+            background: linear-gradient(135deg, #1a6dbb, #0d4d8c);
+            color: white;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+        
+        .risk-level-text {
+            font-size: 24px;
+            font-weight: bold;
+            padding: 8px 20px;
+            border-radius: 30px;
+            display: inline-block;
+            margin-top: 10px;
+        }
+        
+        .low-risk {
+            background-color: #28a745;
+        }
+        
+        .medium-risk {
+            background-color: #ffc107;
+            color: #333;
+        }
+        
+        .high-risk {
+            background-color: #fd7e14;
+        }
+        
+        .very-high-risk {
+            background-color: #dc3545;
+        }
+        
+        .prevention-card {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .prevention-content {
+            flex: 1;
+            padding: 15px;
+            background-color: #fff8e1;
+            border-radius: 6px;
+            border-left: 4px solid #ffc107;
+            overflow-y: auto;
+        }
+        
+        .prevention-title {
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #d48806;
+            font-size: 16px;
+        }
+        
+        .prevention-text {
+            font-size: 14px;
+            line-height: 1.4;
+        }
+        
+        .footer-note {
+            margin-top: 15px;
+            padding: 12px;
+            background-color: #f8f9fa;
+            border-radius: 6px;
+            font-size: 12px;
+            color: #666;
+            border-left: 3px solid #6c757d;
+        }
+        
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        .btn-secondary {
+            background-color: #6c757d;
+        }
+        
+        .btn-secondary:hover {
+            background-color: #545b62;
+        }
+        
+        .btn-success {
+            background-color: #28a745;
+        }
+        
+        .btn-success:hover {
+            background-color: #1e7e34;
+        }
+        
+        .btn-full {
+            width: 100%;
+        }
+        
+        .score-count {
+            display: inline-block;
+            background-color: #1a6dbb;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 12px;
+            margin-left: 5px;
+        }
+        
+        .report-section {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: none;
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .report-content {
+            background-color: white;
+            width: 90%;
+            max-width: 800px;
+            max-height: 90%;
+            border-radius: 10px;
+            padding: 25px;
+            overflow-y: auto;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2);
+        }
+        
+        .report-header {
+            text-align: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #1a6dbb;
+        }
+        
+        .report-details {
+            margin-bottom: 20px;
+        }
+        
+        .report-item {
+            margin-bottom: 15px;
+            padding-bottom: 15px;
+            border-bottom: 1px dashed #eee;
+        }
+        
+        @media (max-width: 1200px) {
+            .main-container {
+                flex-direction: column;
+                max-height: none;
+            }
+            
+            .left-panel, .right-panel {
+                width: 100%;
+                margin-right: 0;
+                min-width: auto;
+            }
+            
+            .risk-categories {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .risk-categories {
+                grid-template-columns: 1fr;
+            }
+            
+            .patient-info {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <header>
+        <div class="header-content">
+            <div>
+                <h1><i class="fas fa-heartbeat"></i> 静脉血栓栓塞症风险评估助手</h1>
+                <p class="subtitle">基于Caprini模型 - VTE高危评分表</p>
+            </div>
+            <div class="current-score">
+                <div class="score-number" id="total-score">0</div>
+                <div class="score-label" id="risk-level">低危</div>
+            </div>
+        </div>
+    </header>
+    
+    <div class="main-container">
+        <!-- 左侧输入区域 -->
+        <div class="left-panel">
+            <!-- 患者信息卡片 -->
+            <div class="card patient-card">
+                <div class="card-title"><i class="fas fa-user"></i> 患者基本信息</div>
+                <div class="patient-info">
+                    <div class="form-group">
+                        <label for="patient-id">病历号/姓名</label>
+                        <input type="text" id="patient-id" placeholder="请输入病历号或姓名">
+                    </div>
+                    <div class="form-group">
+                        <label for="patient-age">年龄（岁）</label>
+                        <input type="number" id="patient-age" min="0" max="120" placeholder="请输入年龄" onchange="updateAgeScore()">
+                    </div>
+                    <div class="form-group">
+                        <label for="patient-bed">住院号/床号</label>
+                        <input type="text" id="patient-bed" placeholder="请输入住院号或床号">
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 风险因素卡片 -->
+            <div class="card risk-factors-card">
+                <div class="card-title"><i class="fas fa-clipboard-list"></i> VTE风险因素评估</div>
+                <div class="risk-categories">
+                    <!-- 1分项 -->
+                    <div class="risk-column">
+                        <div class="column-header">1分/项 <span class="score-count" id="score-1">0</span></div>
+                        <div class="column-content" id="score1-items">
+                            <!-- 1分项将通过JavaScript动态生成 -->
+                        </div>
+                    </div>
+                    
+                    <!-- 2分项 -->
+                    <div class="risk-column">
+                        <div class="column-header">2分/项 <span class="score-count" id="score-2">0</span></div>
+                        <div class="column-content" id="score2-items">
+                            <!-- 2分项将通过JavaScript动态生成 -->
+                        </div>
+                    </div>
+                    
+                    <!-- 3分项 -->
+                    <div class="risk-column">
+                        <div class="column-header">3分/项 <span class="score-count" id="score-3">0</span></div>
+                        <div class="column-content" id="score3-items">
+                            <!-- 3分项将通过JavaScript动态生成 -->
+                        </div>
+                    </div>
+                    
+                    <!-- 5分项 -->
+                    <div class="risk-column">
+                        <div class="column-header">5分/项 <span class="score-count" id="score-5">0</span></div>
+                        <div class="column-content" id="score5-items">
+                            <!-- 5分项将通过JavaScript动态生成 -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 实验室检查卡片 -->
+            <div class="card lab-card">
+                <div class="card-title"><i class="fas fa-flask"></i> 实验室检查</div>
+                <div class="lab-inputs">
+                    <!-- 纤维蛋白原输入 -->
+                    <div class="lab-item">
+                        <div class="lab-item-title">纤维蛋白原 (g/L)</div>
+                        <div class="lab-input-row">
+                            <input type="number" id="fibrinogen" min="0" step="0.01" placeholder="正常值参考范围: 2.0-4.0 g/L">
+                            <button class="btn btn-small" onclick="checkFibrinogen()">评估</button>
+                        </div>
+                        <div id="fibrinogen-result" style="margin-top: 8px; font-size: 13px; display: none;">
+                            <span id="fibrinogen-assessment" style="font-weight: bold;">正常</span>
+                            <span style="color: #666; margin-left: 5px;">纤维蛋白原 > 3.68 g/L 计1分</span>
+                        </div>
+                    </div>
+                    
+                    <!-- D-二聚体输入 -->
+                    <div class="lab-item">
+                        <div class="lab-item-title">D-二聚体 (mg/L)</div>
+                        <div class="lab-input-row">
+                            <input type="number" id="d-dimer" min="0" step="0.01" placeholder="正常值参考范围: 0-0.5 mg/L">
+                            <button class="btn btn-small" onclick="checkDDimer()">评估</button>
+                        </div>
+                        <div id="d-dimer-result" style="margin-top: 8px; font-size: 13px; display: none;">
+                            <span id="d-dimer-assessment" style="font-weight: bold;">正常</span>
+                            <span style="color: #666; margin-left: 5px;">D-二聚体 > 2.5 mg/L 计3分</span>
+                        </div>
+                    </div>
+                    
+                    <!-- SII计算器 -->
+                    <div class="lab-item">
+                        <div class="lab-item-title">全身免疫炎症指数 (SII)</div>
+                        <div class="lab-input-row">
+                            <input type="number" id="platelet" min="0" step="1" placeholder="血小板计数 (×10⁹/L)">
+                            <input type="number" id="neutrophil" min="0" step="0.1" placeholder="中性粒细胞计数 (×10⁹/L)">
+                            <input type="number" id="lymphocyte" min="0" step="0.1" placeholder="淋巴细胞计数 (×10⁹/L)">
+                            <button class="btn btn-small" onclick="calculateSII()">计算SII</button>
+                        </div>
+                        <div id="sii-result" style="margin-top: 8px; font-size: 13px; display: none;">
+                            <span id="sii-value" style="font-weight: bold;">0</span>
+                            <span id="sii-assessment" style="margin-left: 10px;">正常</span>
+                            <span style="color: #666; margin-left: 5px;">SII > 1921 计2分</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 右侧结果区域 -->
+        <div class="right-panel">
+            <!-- 风险等级显示 -->
+            <div class="risk-level-display">
+                <div style="font-size: 16px; margin-bottom: 5px;">VTE风险等级</div>
+                <div class="risk-level-text" id="risk-level-text">低危</div>
+            </div>
+            
+            <!-- 预防措施建议 -->
+            <div class="card prevention-card">
+                <div class="card-title"><i class="fas fa-shield-alt"></i> 预防措施建议</div>
+                <div class="prevention-content" id="prevention-content">
+                    <div class="prevention-title">低危（0-1分）：</div>
+                    <div class="prevention-text">
+                        <p>• 早期活动，鼓励患者尽早下床活动</p>
+                        <p>• 健康教育，讲解VTE预防知识</p>
+                        <p>• 鼓励多饮水，避免脱水</p>
+                    </div>
+                </div>
+                
+                <div class="footer-note">
+                    <p><strong>备注：</strong>权衡抗凝与出血风险后采取个体化预防，对中危伴出血患者，首选物理预防，待出血风险降低后加用药物预防。</p>
+                </div>
+                
+                <div class="action-buttons">
+                    <button class="btn btn-secondary btn-full" onclick="clearForm()"><i class="fas fa-redo"></i> 重置评估</button>
+                    <button class="btn btn-success btn-full" onclick="generateReport()"><i class="fas fa-file-medical"></i> 生成报告</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 报告弹窗 -->
+    <div class="report-section" id="report-section">
+        <div class="report-content">
+            <div class="report-header">
+                <h2><i class="fas fa-file-medical-alt"></i> VTE风险评估报告</h2>
+                <p id="report-date"></p>
+            </div>
+            
+            <div class="report-details">
+                <div class="report-item">
+                    <h4>患者信息</h4>
+                    <p id="report-patient-info"></p>
+                </div>
+                
+                <div class="report-item">
+                    <h4>Caprini评分摘要</h4>
+                    <p>总分：<strong id="report-total-score">0</strong> 分</p>
+                    <p>风险等级：<strong id="report-risk-level">低危</strong></p>
+                    <p>评估时间：<span id="report-time"></span></p>
+                </div>
+                
+                <div class="report-item">
+                    <h4>实验室检查结果</h4>
+                    <div id="report-lab-results"></div>
+                </div>
+                
+                <div class="report-item">
+                    <h4>选中的风险因素</h4>
+                    <div id="report-selected-factors"></div>
+                </div>
+                
+                <div class="report-item">
+                    <h4>预防措施建议</h4>
+                    <div id="report-prevention"></div>
+                </div>
+            </div>
+            
+            <div class="footer-note">
+                <p>本报告基于Caprini风险评估模型生成，仅供参考。临床决策需结合患者具体情况，并由专业医疗人员最终确定。</p>
+            </div>
+            
+            <div class="action-buttons">
+                <button class="btn" onclick="printReport()"><i class="fas fa-print"></i> 打印报告</button>
+                <button class="btn btn-secondary" onclick="closeReport()"><i class="fas fa-times"></i> 关闭</button>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Caprini风险评估表数据（根据图片内容）
+        const capriniData = {
+            score1: [
+                "年龄41~60岁",
+                "肥胖(BMI≥25)",
+                "异常妊娠",
+                "妊娠期或产后(1个月)",
+                "口服避孕药或激素替代治疗",
+                "卧床的内科患者",
+                "炎症性肠病史",
+                "下肢水肿",
+                "静脉曲张",
+                "严重的肺部疾病,含肺炎(1个月内)",
+                "肺功能异常,COPD",
+                "急性心肌梗塞",
+                "充血性心力衰竭(1个月内)",
+                "败血症(1个月内)",
+                "大手术(1个月内)",
+                "其他高危因素"
+            ],
+            score2: [
+                "年龄61~74岁",
+                "石膏固定(1个月内)",
+                "患者需要卧床大于72小时",
+                "恶性肿瘤(既往或现患)",
+                "中心静脉置管",
+                "腹腔镜手术(>45分钟)",
+                "大手术(>45分钟)",
+                "关节镜手术"
+            ],
+            score3: {
+                history: [
+                    "年龄≥75岁",
+                    "深静脉血栓/肺栓塞病史",
+                    "血栓家族史",
+                    "肝素引起的血小板减少HIT",
+                    "未列出的先天或后天血栓形成"
+                ],
+                lab: [
+                    "抗心磷脂抗体阳性",
+                    "凝血酶原20210A阳性",
+                    "因子V Leiden阳性",
+                    "狼疮抗凝物阳性",
+                    "血清同型半胱氨酸升高"
+                ]
+            },
+            score5: {
+                history: [
+                    "脑卒中(1个月内)",
+                    "急性脊髓损伤(瘫痪)(1个月内)"
+                ],
+                surgery: [
+                    "选择性下肢关节置换术",
+                    "髋关节,骨盆或下肢骨折",
+                    "多发性创伤(1个月内)"
+                ]
+            }
+        };
+
+        // 初始化页面
+        document.addEventListener('DOMContentLoaded', function() {
+            // 生成风险因素选择项
+            generateRiskItems();
+            
+            // 更新评分
+            updateScore();
+            
+            // 设置报告日期
+            updateReportDate();
+        });
+
+        // 生成风险因素选择项
+        function generateRiskItems() {
+            // 生成1分项
+            const score1Container = document.getElementById('score1-items');
+            capriniData.score1.forEach(item => {
+                const checkboxId = `score1-${item.substring(0, 5).replace(/\s/g, '')}`;
+                score1Container.innerHTML += `
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="${checkboxId}" value="1" data-category="score1" onchange="updateScore()">
+                        <label for="${checkboxId}">${item}</label>
+                    </div>
+                `;
+            });
+            
+            // 生成2分项
+            const score2Container = document.getElementById('score2-items');
+            capriniData.score2.forEach(item => {
+                const checkboxId = `score2-${item.substring(0, 5).replace(/\s/g, '')}`;
+                score2Container.innerHTML += `
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="${checkboxId}" value="2" data-category="score2" onchange="updateScore()">
+                        <label for="${checkboxId}">${item}</label>
+                    </div>
+                `;
+            });
+            
+            // 生成3分项（病史）
+            const score3Container = document.getElementById('score3-items');
+            capriniData.score3.history.forEach(item => {
+                const checkboxId = `score3-history-${item.substring(0, 5).replace(/\s/g, '')}`;
+                score3Container.innerHTML += `
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="${checkboxId}" value="3" data-category="score3" onchange="updateScore()">
+                        <label for="${checkboxId}">${item}</label>
+                    </div>
+                `;
+            });
+            
+            // 生成3分项（实验室检查）
+            capriniData.score3.lab.forEach(item => {
+                const checkboxId = `score3-lab-${item.substring(0, 5).replace(/\s/g, '')}`;
+                score3Container.innerHTML += `
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="${checkboxId}" value="3" data-category="score3" onchange="updateScore()">
+                        <label for="${checkboxId}">${item}</label>
+                    </div>
+                `;
+            });
+            
+            // 生成5分项（病史）
+            const score5Container = document.getElementById('score5-items');
+            capriniData.score5.history.forEach(item => {
+                const checkboxId = `score5-history-${item.substring(0, 5).replace(/\s/g, '')}`;
+                score5Container.innerHTML += `
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="${checkboxId}" value="5" data-category="score5" onchange="updateScore()">
+                        <label for="${checkboxId}">${item}</label>
+                    </div>
+                `;
+            });
+            
+            // 生成5分项（手术）
+            capriniData.score5.surgery.forEach(item => {
+                const checkboxId = `score5-surgery-${item.substring(0, 5).replace(/\s/g, '')}`;
+                score5Container.innerHTML += `
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="${checkboxId}" value="5" data-category="score5" onchange="updateScore()">
+                        <label for="${checkboxId}">${item}</label>
+                    </div>
+                `;
+            });
+        }
+
+        // 根据年龄自动更新年龄相关评分
+        function updateAgeScore() {
+            const age = parseInt(document.getElementById('patient-age').value);
+            if (isNaN(age)) return;
+            
+            // 清除所有年龄相关的复选框
+            document.querySelectorAll('input[id^="score1-年龄"]').forEach(cb => cb.checked = false);
+            document.querySelectorAll('input[id^="score2-年龄"]').forEach(cb => cb.checked = false);
+            document.querySelectorAll('input[id^="score3-年龄"]').forEach(cb => cb.checked = false);
+            
+            // 根据年龄选择对应的复选框
+            if (age >= 41 && age <= 60) {
+                document.querySelector('input[id^="score1-年龄"]').checked = true;
+            } else if (age >= 61 && age <= 74) {
+                document.querySelector('input[id^="score2-年龄"]').checked = true;
+            } else if (age >= 75) {
+                document.querySelector('input[id^="score3-年龄"]').checked = true;
+            }
+            
+            updateScore();
+        }
+
+        // 检查纤维蛋白原
+        function checkFibrinogen() {
+            const fibrinogen = parseFloat(document.getElementById('fibrinogen').value);
+            
+            if (isNaN(fibrinogen)) {
+                alert('请输入有效的纤维蛋白原值！');
+                return;
+            }
+            
+            document.getElementById('fibrinogen-result').style.display = 'block';
+            
+            // 检查纤维蛋白原是否大于3.68
+            const fibrinogenCheckbox = document.getElementById('fibrinogen-risk');
+            if (fibrinogen > 3.68) {
+                document.getElementById('fibrinogen-assessment').textContent = `升高 (${fibrinogen.toFixed(2)} g/L > 3.68 g/L)，计1分`;
+                document.getElementById('fibrinogen-assessment').style.color = '#dc3545';
+                
+                // 如果还没有纤维蛋白原风险复选框，则创建一个
+                if (!fibrinogenCheckbox) {
+                    const score1Container = document.getElementById('score1-items');
+                    score1Container.innerHTML += `
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="fibrinogen-risk" value="1" data-category="score1" checked onchange="updateScore()">
+                            <label for="fibrinogen-risk" style="color:#dc3545; font-weight:bold;">纤维蛋白原 > 3.68 g/L (${fibrinogen.toFixed(2)} g/L)</label>
+                        </div>
+                    `;
+                } else {
+                    fibrinogenCheckbox.checked = true;
+                    fibrinogenCheckbox.nextElementSibling.innerHTML = `纤维蛋白原 > 3.68 g/L (${fibrinogen.toFixed(2)} g/L)`;
+                }
+            } else {
+                document.getElementById('fibrinogen-assessment').textContent = `正常 (${fibrinogen.toFixed(2)} g/L ≤ 3.68 g/L)`;
+                document.getElementById('fibrinogen-assessment').style.color = '#28a745';
+                
+                // 如果存在纤维蛋白原风险复选框，则取消选中
+                if (fibrinogenCheckbox) {
+                    fibrinogenCheckbox.checked = false;
+                }
+            }
+            
+            updateScore();
+        }
+
+        // 检查D-二聚体
+        function checkDDimer() {
+            const dDimer = parseFloat(document.getElementById('d-dimer').value);
+            
+            if (isNaN(dDimer)) {
+                alert('请输入有效的D-二聚体值！');
+                return;
+            }
+            
+            document.getElementById('d-dimer-result').style.display = 'block';
+            
+            // 检查D-二聚体是否大于2.5
+            const dDimerCheckbox = document.getElementById('ddimer-risk');
+            if (dDimer > 2.5) {
+                document.getElementById('d-dimer-assessment').textContent = `升高 (${dDimer.toFixed(2)} mg/L > 2.5 mg/L)，计3分`;
+                document.getElementById('d-dimer-assessment').style.color = '#dc3545';
+                
+                // 如果还没有D-二聚体风险复选框，则创建一个
+                if (!dDimerCheckbox) {
+                    const score3Container = document.getElementById('score3-items');
+                    score3Container.innerHTML += `
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="ddimer-risk" value="3" data-category="score3" checked onchange="updateScore()">
+                            <label for="ddimer-risk" style="color:#dc3545; font-weight:bold;">D-二聚体 > 2.5 mg/L (${dDimer.toFixed(2)} mg/L)</label>
+                        </div>
+                    `;
+                } else {
+                    dDimerCheckbox.checked = true;
+                    dDimerCheckbox.nextElementSibling.innerHTML = `D-二聚体 > 2.5 mg/L (${dDimer.toFixed(2)} mg/L)`;
+                }
+            } else {
+                document.getElementById('d-dimer-assessment').textContent = `正常 (${dDimer.toFixed(2)} mg/L ≤ 2.5 mg/L)`;
+                document.getElementById('d-dimer-assessment').style.color = '#28a745';
+                
+                // 如果存在D-二聚体风险复选框，则取消选中
+                if (dDimerCheckbox) {
+                    dDimerCheckbox.checked = false;
+                }
+            }
+            
+            updateScore();
+        }
+
+        // 计算SII值
+        function calculateSII() {
+            const platelet = parseFloat(document.getElementById('platelet').value);
+            const neutrophil = parseFloat(document.getElementById('neutrophil').value);
+            const lymphocyte = parseFloat(document.getElementById('lymphocyte').value);
+            
+            if (isNaN(platelet) || isNaN(neutrophil) || isNaN(lymphocyte) || lymphocyte === 0) {
+                alert('请输入有效的血小板、中性粒细胞和淋巴细胞计数值！');
+                return;
+            }
+            
+            const sii = platelet * neutrophil / lymphocyte;
+            document.getElementById('sii-value').textContent = sii.toFixed(2);
+            document.getElementById('sii-result').style.display = 'block';
+            
+            // 检查SII是否大于1921
+            const siiCheckbox = document.getElementById('sii-risk');
+            if (sii > 1921) {
+                document.getElementById('sii-assessment').textContent = '升高 (>1921)，计2分';
+                document.getElementById('sii-assessment').style.color = '#dc3545';
+                
+                // 如果还没有SII风险复选框，则创建一个
+                if (!siiCheckbox) {
+                    const score2Container = document.getElementById('score2-items');
+                    score2Container.innerHTML += `
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="sii-risk" value="2" data-category="score2" checked onchange="updateScore()">
+                            <label for="sii-risk" style="color:#dc3545; font-weight:bold;">SII > 1921 (${sii.toFixed(2)})</label>
+                        </div>
+                    `;
+                } else {
+                    siiCheckbox.checked = true;
+                    siiCheckbox.nextElementSibling.innerHTML = `SII > 1921 (${sii.toFixed(2)})`;
+                }
+            } else {
+                document.getElementById('sii-assessment').textContent = '正常 (≤1921)';
+                document.getElementById('sii-assessment').style.color = '#28a745';
+                
+                // 如果存在SII风险复选框，则取消选中
+                if (siiCheckbox) {
+                    siiCheckbox.checked = false;
+                }
+            }
+            
+            updateScore();
+        }
+
+        // 更新总分和风险等级
+        function updateScore() {
+            let totalScore = 0;
+            let score1Count = 0;
+            let score2Count = 0;
+            let score3Count = 0;
+            let score5Count = 0;
+            
+            // 计算各分项选中数量
+            document.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+                if (checkbox.checked) {
+                    const value = parseInt(checkbox.value);
+                    totalScore += value;
+                    
+                    // 统计各分值项数量
+                    if (value === 1) score1Count++;
+                    else if (value === 2) score2Count++;
+                    else if (value === 3) score3Count++;
+                    else if (value === 5) score5Count++;
+                }
+            });
+            
+            // 更新显示
+            document.getElementById('total-score').textContent = totalScore;
+            document.getElementById('score-1').textContent = score1Count;
+            document.getElementById('score-2').textContent = score2Count;
+            document.getElementById('score-3').textContent = score3Count;
+            document.getElementById('score-5').textContent = score5Count;
+            
+            // 更新风险等级
+            const riskLevelElement = document.getElementById('risk-level');
+            const riskLevelText = document.getElementById('risk-level-text');
+            let riskLevel = '', riskClass = '';
+            
+            if (totalScore <= 1) {
+                riskLevel = '低危';
+                riskClass = 'low-risk';
+            } else if (totalScore === 2) {
+                riskLevel = '中危';
+                riskClass = 'medium-risk';
+            } else if (totalScore >= 3 && totalScore <= 4) {
+                riskLevel = '高危';
+                riskClass = 'high-risk';
+            } else if (totalScore >= 5) {
+                riskLevel = '极高危';
+                riskClass = 'very-high-risk';
+            }
+            
+            riskLevelElement.textContent = riskLevel;
+            riskLevelText.textContent = riskLevel;
+            riskLevelText.className = 'risk-level-text ' + riskClass;
+            
+            // 更新预防建议
+            updatePreventionAdvice(totalScore, riskLevel);
+        }
+
+        // 更新预防建议
+        function updatePreventionAdvice(score, level) {
+            const adviceContainer = document.getElementById('prevention-content');
+            let adviceHTML = '';
+            
+            if (score <= 1) {
+                adviceHTML = `
+                    <div class="prevention-title">低危（0-1分）：</div>
+                    <div class="prevention-text">
+                        <p>• 早期活动，鼓励患者尽早下床活动</p>
+                        <p>• 健康教育，讲解VTE预防知识</p>
+                        <p>• 鼓励多饮水，避免脱水</p>
+                        <p>• 基础预防措施</p>
+                    </div>
+                `;
+            } else if (score === 2) {
+                adviceHTML = `
+                    <div class="prevention-title">中危（2分）：</div>
+                    <div class="prevention-text">
+                        <p>• 物理预防：梯度压力弹力袜、间歇充气加压装置</p>
+                        <p>• 如无禁忌，可考虑药物预防</p>
+                        <p><strong>特别提醒：</strong>对中危伴出血风险患者，首选物理预防，待出血风险降低后加用药物预防。</p>
+                        <p>• 定期评估出血风险</p>
+                    </div>
+                `;
+            } else if (score >= 3 && score <= 4) {
+                adviceHTML = `
+                    <div class="prevention-title">高危（3-4分）：</div>
+                    <div class="prevention-text">
+                        <p>• 药物预防（如低分子肝素）联合物理预防，除非存在禁忌</p>
+                        <p>• 定期监测凝血功能</p>
+                        <p>• 评估出血风险，调整预防方案</p>
+                        <p>• 加强护理观察</p>
+                    </div>
+                `;
+            } else if (score >= 5) {
+                adviceHTML = `
+                    <div class="prevention-title">极高危（≥5分）：</div>
+                    <div class="prevention-text">
+                        <p>• 药物预防（如低分子肝素）联合物理预防，除非存在禁忌</p>
+                        <p>• 考虑延长预防时间（如出院后继续预防）</p>
+                        <p>• 严密监测凝血功能和出血迹象</p>
+                        <p>• 多学科会诊制定个体化方案</p>
+                    </div>
+                `;
+            }
+            
+            adviceContainer.innerHTML = adviceHTML;
+        }
+
+        // 更新报告日期
+        function updateReportDate() {
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            
+            document.getElementById('report-date').textContent = `报告日期：${year}年${month}月${day}日`;
+            document.getElementById('report-time').textContent = `${year}年${month}月${day}日 ${hours}:${minutes}`;
+        }
+
+        // 生成评估报告
+        function generateReport() {
+            const patientId = document.getElementById('patient-id').value || '未填写';
+            const age = document.getElementById('patient-age').value || '未填写';
+            const bed = document.getElementById('patient-bed').value || '未填写';
+            const totalScore = document.getElementById('total-score').textContent;
+            const riskLevel = document.getElementById('risk-level').textContent;
+            
+            // 患者信息
+            document.getElementById('report-patient-info').innerHTML = `
+                <p>病历号/姓名：${patientId}</p>
+                <p>年龄：${age}岁</p>
+                <p>住院号/床号：${bed}</p>
+            `;
+            
+            // 评分摘要
+            document.getElementById('report-total-score').textContent = totalScore;
+            document.getElementById('report-risk-level').textContent = riskLevel;
+            
+            // 实验室检查结果
+            const fibrinogenValue = document.getElementById('fibrinogen').value;
+            const dDimerValue = document.getElementById('d-dimer').value;
+            const plateletValue = document.getElementById('platelet').value;
+            const neutrophilValue = document.getElementById('neutrophil').value;
+            const lymphocyteValue = document.getElementById('lymphocyte').value;
+            
+            let labResultsHTML = '<ul>';
+            if (fibrinogenValue) {
+                const assessment = parseFloat(fibrinogenValue) > 3.68 ? 
+                    `升高 (${fibrinogenValue} g/L > 3.68 g/L)，计1分` : 
+                    `正常 (${fibrinogenValue} g/L ≤ 3.68 g/L)`;
+                labResultsHTML += `<li><strong>纤维蛋白原：</strong>${assessment}</li>`;
+            }
+            if (dDimerValue) {
+                const assessment = parseFloat(dDimerValue) > 2.5 ? 
+                    `升高 (${dDimerValue} mg/L > 2.5 mg/L)，计3分` : 
+                    `正常 (${dDimerValue} mg/L ≤ 2.5 mg/L)`;
+                labResultsHTML += `<li><strong>D-二聚体：</strong>${assessment}</li>`;
+            }
+            if (plateletValue && neutrophilValue && lymphocyteValue) {
+                const sii = (plateletValue * neutrophilValue / lymphocyteValue).toFixed(2);
+                const assessment = sii > 1921 ? 
+                    `升高 (${sii} > 1921)，计2分` : 
+                    `正常 (${sii} ≤ 1921)`;
+                labResultsHTML += `<li><strong>SII指数：</strong>${assessment} (血小板${plateletValue}×中性粒${neutrophilValue}÷淋巴${lymphocyteValue})</li>`;
+            }
+            labResultsHTML += '</ul>';
+            
+            if (!fibrinogenValue && !dDimerValue && !plateletValue) {
+                labResultsHTML = '<p>未输入实验室检查数据。</p>';
+            }
+            
+            document.getElementById('report-lab-results').innerHTML = labResultsHTML;
+            
+            // 选中的风险因素
+            const selectedFactors = [];
+            document.querySelectorAll('input[type="checkbox"]:checked').forEach(checkbox => {
+                selectedFactors.push(checkbox.nextElementSibling.textContent);
+            });
+            
+            const factorsContainer = document.getElementById('report-selected-factors');
+            if (selectedFactors.length > 0) {
+                factorsContainer.innerHTML = '<ul>' + selectedFactors.map(factor => `<li>${factor}</li>`).join('') + '</ul>';
+            } else {
+                factorsContainer.innerHTML = '<p>未选择任何风险因素。</p>';
+            }
+            
+            // 预防措施
+            const preventionHTML = document.getElementById('prevention-content').innerHTML;
+            document.getElementById('report-prevention').innerHTML = preventionHTML;
+            
+            // 显示报告
+            document.getElementById('report-section').style.display = 'flex';
+        }
+
+        // 打印报告
+        function printReport() {
+            const printContent = document.getElementById('report-section').innerHTML;
+            const originalContent = document.body.innerHTML;
+            
+            document.body.innerHTML = printContent;
+            window.print();
+            document.body.innerHTML = originalContent;
+            
+            // 重新初始化页面
+            generateRiskItems();
+            updateScore();
+            updateReportDate();
+        }
+
+        // 关闭报告
+        function closeReport() {
+            document.getElementById('report-section').style.display = 'none';
+        }
+
+        // 重置表单
+        function clearForm() {
+            if (confirm('确定要重置所有评估数据吗？')) {
+                // 清除所有复选框
+                document.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+                    checkbox.checked = false;
+                });
+                
+                // 清除实验室检查相关
+                document.getElementById('fibrinogen').value = '';
+                document.getElementById('d-dimer').value = '';
+                document.getElementById('platelet').value = '';
+                document.getElementById('neutrophil').value = '';
+                document.getElementById('lymphocyte').value = '';
+                document.getElementById('fibrinogen-result').style.display = 'none';
+                document.getElementById('d-dimer-result').style.display = 'none';
+                document.getElementById('sii-result').style.display = 'none';
+                
+                // 清除患者信息
+                document.getElementById('patient-id').value = '';
+                document.getElementById('patient-age').value = '';
+                document.getElementById('patient-bed').value = '';
+                
+                // 重置实验室检查复选框（如果存在）
+                const fibrinogenCheckbox = document.getElementById('fibrinogen-risk');
+                const dDimerCheckbox = document.getElementById('ddimer-risk');
+                const siiCheckbox = document.getElementById('sii-risk');
+                
+                if (fibrinogenCheckbox) {
+                    fibrinogenCheckbox.parentElement.remove();
+                }
+                if (dDimerCheckbox) {
+                    dDimerCheckbox.parentElement.remove();
+                }
+                if (siiCheckbox) {
+                    siiCheckbox.parentElement.remove();
+                }
+                
+                // 更新评分
+                updateScore();
+            }
+        }
+    </script>
+</body>
 </html>
